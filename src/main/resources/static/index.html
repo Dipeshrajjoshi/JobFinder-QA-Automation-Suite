@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobFinder | QA Portfolio Demo</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7fb;color:#182230;margin:0}
+header{background:#172554;color:white;padding:28px max(6%,calc((100% - 1000px)/2))}
+main{max-width:1000px;margin:28px auto;padding:0 20px}
+.panel{background:white;padding:22px;border-radius:12px;box-shadow:0 3px 14px #14213d12;margin-bottom:18px}
+input,select,button{padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px;margin:4px}
+button{background:#1d4ed8;color:white;border:0;cursor:pointer}button:hover{background:#1e40af}
+.job{border:1px solid #e2e8f0;border-radius:9px;padding:16px;margin:12px 0}
+.muted{color:#64748b}.status{min-height:20px;color:#b91c1c}
+</style>
+</head>
+<body>
+<header><h1>JobFinder</h1><p>Find your next opportunity · QA automation demo</p></header>
+<main>
+  <section class="panel">
+    <h2>Search jobs</h2>
+    <label for="search">Keyword</label><input id="search" placeholder="e.g. QA Engineer">
+    <label for="location">Location</label>
+    <select id="location"><option value="">All locations</option><option>Remote</option><option>Toronto</option><option>Hybrid</option></select>
+    <button id="searchButton">Search</button><button id="resetButton" type="button">Reset</button>
+    <p id="status" class="status" role="status"></p>
+  </section>
+  <section class="panel"><h2>Available jobs</h2><p id="resultCount" class="muted"></p><div id="jobs"></div></section>
+</main>
+<script>
+const search = document.querySelector('#search');
+const locationFilter = document.querySelector('#location');
+const jobsContainer = document.querySelector('#jobs');
+const status = document.querySelector('#status');
+async function loadJobs(){
+  status.textContent='';
+  const params = new URLSearchParams();
+  if(search.value.trim()) params.set('q',search.value.trim());
+  if(locationFilter.value) params.set('location',locationFilter.value);
+  try {
+    const response = await fetch('/api/jobs?' + params.toString());
+    if(!response.ok) throw new Error('Unable to load jobs');
+    const jobs = await response.json();
+    document.querySelector('#resultCount').textContent = `${jobs.length} job(s) found`;
+    jobsContainer.replaceChildren();
+    if(jobs.length===0){jobsContainer.innerHTML='<p id="emptyState">No jobs found. Try another search.</p>';return;}
+    jobs.forEach(job=>{
+      const card=document.createElement('article'); card.className='job'; card.dataset.jobId=job.id;
+      const title=document.createElement('h3'); title.textContent=job.title;
+      const details=document.createElement('p'); details.textContent=`${job.company} · ${job.location} · ${job.type}`;
+      const link=document.createElement('a'); link.href=`/job.html?id=${job.id}`; link.textContent='View details';
+      card.append(title,details,link); jobsContainer.append(card);
+    });
+  } catch(e){status.textContent='Could not load jobs. Please try again.';}
+}
+document.querySelector('#searchButton').addEventListener('click',loadJobs);
+document.querySelector('#resetButton').addEventListener('click',()=>{search.value='';locationFilter.value='';loadJobs();});
+search.addEventListener('keydown',e=>{if(e.key==='Enter')loadJobs();});
+loadJobs();
+</script>
+</body></html>
